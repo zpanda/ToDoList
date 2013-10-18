@@ -12,6 +12,7 @@
 
 @interface TableViewController ()
     
+- (IBAction)onTap:(id)sender;
 @end
 
 
@@ -37,6 +38,7 @@
     UINib *customNib = [UINib nibWithNibName:@"CustomCell" bundle:nil];
     [self.tableView registerNib:customNib forCellReuseIdentifier:@"CustomCell"];
     
+    // add the edit and + buttons
     self.navigationController.navigationBar.tintColor = [[UIColor alloc] initWithRed:32.0 / 255 green:14.0 / 255 blue:53.0 / 255 alpha:1.0];
     self.navigationItem.leftBarButtonItem = self.editButtonItem;
     self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemAdd 
@@ -104,11 +106,18 @@
         // Delete the row from the data source        
         //[tableView deleteRowsAtIndexPaths:[NSArray arrayWithObject:indexPath] withRowAnimation:UITableViewRowAnimationFade];
         int editableItemsIndex = [indexPath indexAtPosition:1];
+        if ( ([editableItems count] == 0) || (editableItemsIndex >= [editableItems count] ) )
+        {
+            NSLog(@"houston we have a problem ... ");
+            return;
+        }
         [editableItems removeObjectAtIndex:editableItemsIndex];
+        [self printArray];
         [tableView reloadData];
     }   
     else if (editingStyle == UITableViewCellEditingStyleInsert) {
         // Create a new instance of the appropriate class, insert it into the array, and add a new row to the table view
+        NSLog (@"Insert mode");
     }   
 }
 
@@ -150,24 +159,75 @@
 }
 
 
+
+#pragma mark - UI Text Field delegate
+
+- (BOOL)textFieldShouldEndEditing:(UITextField *)textField
+{
+    return true;
+}
+
+
+- (BOOL)textFieldShouldReturn:(UITextField *)textField
+{
+    [self.view endEditing:TRUE]; 
+    return true;
+}
+
+
+- (void)textFieldDidEndEditing:(UITextField *)textField
+{
+    [self onEditingDone:textField];
+}
+
+
+
+#pragma mark - methods
+
+-(int)onEditingDone:(UITextField *)textField
+{
+    // get the index of textfield that we edited
+    NSIndexPath *indexPath = [self.tableView indexPathForCell:(CustomCell*)[[textField superview] superview]];
+    int editableItemsIndex = [indexPath indexAtPosition:1];
+    // sanity check to make sure still there
+    int editableItemsCount = [editableItems count];
+    if ( (editableItemsCount==0) || (editableItemsIndex >= editableItemsCount) )
+    {
+        return -1;
+    }
+    
+    // get the string from the cell and store in array
+    NSString *textFieldString = textField.text;
+    [editableItems replaceObjectAtIndex:editableItemsIndex withObject:textFieldString];
+    [self printArray];
+    return editableItemsIndex;
+}
+
+
 -(void)onAddButtonClicked 
 {
     NSString *string = [[NSString alloc]initWithString:@""];
     [editableItems addObject:string];		//Add to end of array
+    [self printArray];
     [self.tableView reloadData];
 }
 
 
-#pragma mark - UI Text Field delegate
-
-- (void)textFieldDidEndEditing:(UITextField *)textField
+// Debug function to print the NSArray
+-(void)printArray
 {
-    NSIndexPath *indexPath = [self.tableView indexPathForCell:(CustomCell*)[[textField superview] superview]];
-    int editableItemsIndex = [indexPath indexAtPosition:1];
-    
-    NSString *textFieldString = textField.text;
-    [editableItems replaceObjectAtIndex:editableItemsIndex withObject:textFieldString];
-    NSLog(@"editing text field : %d ", editableItemsIndex);
+    int editableItemCount = [editableItems count];
+    NSLog( @" items in array %d ", editableItemCount );
+    for ( int i=0; i< editableItemCount; i++ )
+    {
+        NSString *string = [editableItems objectAtIndex:i];
+        NSLog(@"  At [ %d ] string is %s ", i, string.cString );
+    }
 }
 
+
+- (IBAction)onTap:(id)sender 
+{
+    NSLog(@"someone's tapping me  ");
+}
 @end
